@@ -9,5 +9,7 @@
 
 sudo apt install libxdo-dev
 
+sudo apt install libgtk-4-dev build-essential
+
 Good luck...
 ```
