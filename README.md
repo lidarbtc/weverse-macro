@@ -5,5 +5,9 @@
 
 매우 빠르게 작동하지만 결국 운이 가장 중요합니다.
 
+최대 2ms의 오차가 발생할 수 있습니다.
+
+sudo apt install libxdo-dev
+
 Good luck...
 ```
