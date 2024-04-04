@@ -9,7 +9,6 @@ use std::thread;
 use std::time::{Duration as StdDuration, Instant};
 
 fn main() {
-    // GTK 애플리케이션 초기화
     let app = Application::builder()
         .application_id("com.lidar.weverse_macro")
         .build();
@@ -59,15 +58,37 @@ fn build_ui(app: &Application) {
     vbox.append(&time_entry);
 
     let button = Button::with_label("설정");
+    button.set_margin_bottom(3);
     vbox.append(&button);
+
+    let current_time_button = Button::with_label("현재 시간 가져오기");
+    vbox.append(&current_time_button);
+
+    let date_entry_rc = Rc::new(RefCell::new(date_entry));
+    let time_entry_rc = Rc::new(RefCell::new(time_entry));
+
+    let date_entry_clone = date_entry_rc.clone();
+    let time_entry_clone = time_entry_rc.clone();
+    current_time_button.connect_clicked(move |_| {
+        let now = Local::now();
+
+        let date_str = now.format("%Y-%m-%d").to_string();
+        let time_str = now.format("%H:%M:%S%.3f").to_string();
+
+        date_entry_clone.borrow().set_text(&date_str);
+        time_entry_clone.borrow().set_text(&time_str);
+    });
 
     let window_rc = Rc::new(RefCell::new(window));
 
     let window_rc_clone = window_rc.clone();
     button.connect_clicked(move |_| {
+        let date_entry_clone = date_entry_rc.clone();
+        let time_entry_clone = time_entry_rc.clone();
+
         let window_ref = window_rc_clone.borrow();
-        let date_text = date_entry.text().to_string();
-        let time_text = time_entry.text().to_string();
+        let date_text = date_entry_clone.borrow().text().to_string();
+        let time_text = time_entry_clone.borrow().text().to_string();
 
         if let (Ok(date), Ok(time)) = (
             NaiveDate::from_str(&date_text),
@@ -76,10 +97,8 @@ fn build_ui(app: &Application) {
             let mut enigo = Enigo::new();
             let target_datetime = NaiveDateTime::new(date, time);
 
-            // 현재 시간 (NaiveDateTime) 계산
             let now = Local::now().naive_local();
 
-            // 목표 시간까지 남은 시간 계산
             let wait_duration = if target_datetime > now {
                 target_datetime - now
             } else {
@@ -101,11 +120,10 @@ fn build_ui(app: &Application) {
                     // CPU 과부하 방지를 위해 1밀리초 대기
                     thread::sleep(StdDuration::from_millis(1));
                 }
-            }
 
-            // 마우스 좌클릭 수행
-            enigo.mouse_click(MouseButton::Left);
-            show_popup(&window_ref, "클릭 완료!");
+                enigo.mouse_click(MouseButton::Left);
+                show_popup(&window_ref, "클릭 완료!");
+            }
         } else {
             show_popup(&window_ref, "잘못된 날짜 또는 시간 형식입니다.");
         }
