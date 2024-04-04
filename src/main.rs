@@ -29,11 +29,11 @@ fn build_ui(app: &Application) {
     window.set_child(Some(&vbox));
 
     let date_entry = Entry::new();
-    date_entry.set_placeholder_text(Some("YYYY-MM-DD"));
+    date_entry.set_placeholder_text(Some("2021-04-01"));
     vbox.append(&date_entry);
 
     let time_entry = Entry::new();
-    time_entry.set_placeholder_text(Some("HH:MM:SS"));
+    time_entry.set_placeholder_text(Some("17:15:07.349"));
     vbox.append(&time_entry);
 
     let button = Button::with_label("설정");
