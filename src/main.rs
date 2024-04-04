@@ -112,8 +112,8 @@ fn build_ui(app: &Application) {
             let wait_millis = wait_duration.num_milliseconds();
 
             if wait_millis > 0 {
-                let message = format!("목표 시간까지 대기: {}초", wait_millis as f64 / 1000.0);
-                show_popup(&window_ref, &message);
+                // let message = format!("목표 시간까지 대기: {}초", wait_millis as f64 / 1000.0);
+                // show_popup(&window_ref, &message);
                 let start = Instant::now();
                 let duration_to_sleep = StdDuration::from_millis(wait_millis as u64);
                 while start.elapsed() < duration_to_sleep {
