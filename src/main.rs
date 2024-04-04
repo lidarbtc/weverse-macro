@@ -22,18 +22,24 @@ fn build_ui(app: &Application) {
         .application(app)
         .title("시간 입력")
         .default_width(300)
-        .default_height(100)
+        .default_height(170)
         .build();
 
-    let vbox = gtk4::Box::new(Orientation::Vertical, 5);
+    let vbox = gtk4::Box::new(Orientation::Vertical, 20);
+    vbox.set_margin_top(10);
+    vbox.set_margin_bottom(10);
+    vbox.set_margin_start(10);
+    vbox.set_margin_end(10);
     window.set_child(Some(&vbox));
 
     let date_entry = Entry::new();
     date_entry.set_placeholder_text(Some("2021-04-01"));
+    date_entry.set_margin_bottom(3);
     vbox.append(&date_entry);
 
     let time_entry = Entry::new();
     time_entry.set_placeholder_text(Some("17:15:07.349"));
+    time_entry.set_margin_bottom(3);
     vbox.append(&time_entry);
 
     let button = Button::with_label("설정");
