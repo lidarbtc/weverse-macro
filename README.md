@@ -7,9 +7,24 @@
 
 최대 2ms의 오차가 발생할 수 있습니다.
 
-sudo apt install libxdo-dev
+아래는 각 시스템별 빌드 환경 구축 방법입니다.
+linux:
 
-sudo apt install libgtk-4-dev build-essential
+sudo apt install libxdo-dev libgtk-4-dev build-essential
+
+mac:
+
+brew install gtk4
+
+windows:
+
+[gtk4 공식 문서](https://gtk-rs.org/gtk4-rs/stable/latest/book/installation_windows.html)를 참조해주세요.
+
+아래는 모든 시스템에서 동일한 빌드 방법입니다.
+
+cargo build --release
+
+위 명령어를 실행하면 target/release 폴더에 실행 파일이 생성됩니다.
 
 Good luck...
 ```
