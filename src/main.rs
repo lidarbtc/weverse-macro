@@ -1,5 +1,5 @@
 use chrono::{Local, NaiveDate, NaiveDateTime, NaiveTime};
-use enigo::*;
+use enigo::{Direction::Press, Enigo, Mouse, Settings};
 use gtk4::prelude::*;
 use gtk4::{Application, ApplicationWindow, Button, Entry, Orientation};
 use std::cell::RefCell;
@@ -94,7 +94,7 @@ fn build_ui(app: &Application) {
             NaiveDate::from_str(&date_text),
             NaiveTime::from_str(&time_text),
         ) {
-            let mut enigo = Enigo::new();
+            let mut enigo = Enigo::new(&Settings::default()).unwrap();
             let target_datetime = NaiveDateTime::new(date, time);
 
             let now = Local::now().naive_local();
@@ -121,7 +121,7 @@ fn build_ui(app: &Application) {
                     thread::sleep(StdDuration::from_millis(1));
                 }
 
-                enigo.mouse_click(MouseButton::Left);
+                enigo.button(enigo::Button::Left, Press).unwrap();
                 show_popup(&window_ref, "클릭 완료!");
             }
         } else {
