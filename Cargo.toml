@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.41"
 enigo = "0.5.0"
+glib = "0.21.0"
 gtk4 = "0.10.0"
 
 [profile.release]

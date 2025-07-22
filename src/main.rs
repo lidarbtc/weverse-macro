@@ -1,12 +1,11 @@
 use chrono::{Local, NaiveDate, NaiveDateTime, NaiveTime};
-use enigo::{Direction::Press, Enigo, Mouse, Settings};
+use enigo::{Direction::Click, Enigo, Mouse, Settings};
 use gtk4::prelude::*;
 use gtk4::{Application, ApplicationWindow, Button, Entry, Orientation};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::str::FromStr;
-use std::thread;
-use std::time::{Duration as StdDuration, Instant};
+use std::time::Duration as StdDuration;
 
 fn main() {
     let app = Application::builder()
@@ -67,6 +66,8 @@ fn build_ui(app: &Application) {
     let date_entry_rc = Rc::new(RefCell::new(date_entry));
     let time_entry_rc = Rc::new(RefCell::new(time_entry));
 
+    let timer_id = Rc::new(RefCell::new(None::<glib::SourceId>));
+
     let date_entry_clone = date_entry_rc.clone();
     let time_entry_clone = time_entry_rc.clone();
     current_time_button.connect_clicked(move |_| {
@@ -82,9 +83,11 @@ fn build_ui(app: &Application) {
     let window_rc = Rc::new(RefCell::new(window));
 
     let window_rc_clone = window_rc.clone();
+    let timer_id_clone = timer_id.clone();
     button.connect_clicked(move |_| {
         let date_entry_clone = date_entry_rc.clone();
         let time_entry_clone = time_entry_rc.clone();
+        let timer_id_clone = timer_id_clone.clone();
 
         let window_ref = window_rc_clone.borrow();
         let date_text = date_entry_clone.borrow().text().to_string();
@@ -94,9 +97,7 @@ fn build_ui(app: &Application) {
             NaiveDate::from_str(&date_text),
             NaiveTime::from_str(&time_text),
         ) {
-            let mut enigo = Enigo::new(&Settings::default()).unwrap();
             let target_datetime = NaiveDateTime::new(date, time);
-
             let now = Local::now().naive_local();
 
             let wait_duration = if target_datetime > now {
@@ -112,17 +113,32 @@ fn build_ui(app: &Application) {
             let wait_millis = wait_duration.num_milliseconds();
 
             if wait_millis > 0 {
-                // let message = format!("목표 시간까지 대기: {}초", wait_millis as f64 / 1000.0);
-                // show_popup(&window_ref, &message);
-                let start = Instant::now();
-                let duration_to_sleep = StdDuration::from_millis(wait_millis as u64);
-                while start.elapsed() < duration_to_sleep {
-                    // CPU 과부하 방지를 위해 1밀리초 대기
-                    thread::sleep(StdDuration::from_millis(1));
+                if let Some(old_timer) = timer_id_clone.borrow_mut().take() {
+                    old_timer.remove();
                 }
 
-                enigo.button(enigo::Button::Left, Press).unwrap();
-                show_popup(&window_ref, "클릭 완료!");
+                let window_weak = window_ref.downgrade();
+
+                let new_timer_id = glib::timeout_add_local(
+                    StdDuration::from_millis(wait_millis as u64),
+                    move || {
+                        if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+                            let _ = enigo.button(enigo::Button::Left, Click);
+                        }
+
+                        if let Some(window) = window_weak.upgrade() {
+                            show_popup(&window, "클릭 완료!");
+                        }
+
+                        glib::ControlFlow::Break
+                    },
+                );
+
+                *timer_id_clone.borrow_mut() = Some(new_timer_id);
+
+                let wait_seconds = wait_millis as f64 / 1000.0;
+                let message = format!("타이머 설정됨: {:.3}초 후 클릭", wait_seconds);
+                show_popup(&window_ref, &message);
             }
         } else {
             show_popup(&window_ref, "잘못된 날짜 또는 시간 형식입니다.");
