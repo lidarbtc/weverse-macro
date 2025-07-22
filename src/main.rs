@@ -66,7 +66,7 @@ fn build_ui(app: &Application) {
     let date_entry_rc = Rc::new(RefCell::new(date_entry));
     let time_entry_rc = Rc::new(RefCell::new(time_entry));
 
-    let timer_id = Rc::new(RefCell::new(None::<glib::SourceId>));
+    let timer_active = Rc::new(RefCell::new(false));
 
     let date_entry_clone = date_entry_rc.clone();
     let time_entry_clone = time_entry_rc.clone();
@@ -83,11 +83,11 @@ fn build_ui(app: &Application) {
     let window_rc = Rc::new(RefCell::new(window));
 
     let window_rc_clone = window_rc.clone();
-    let timer_id_clone = timer_id.clone();
+    let timer_active_clone = timer_active.clone();
     button.connect_clicked(move |_| {
         let date_entry_clone = date_entry_rc.clone();
         let time_entry_clone = time_entry_rc.clone();
-        let timer_id_clone = timer_id_clone.clone();
+        let timer_active_clone = timer_active_clone.clone();
 
         let window_ref = window_rc_clone.borrow();
         let date_text = date_entry_clone.borrow().text().to_string();
@@ -113,28 +113,29 @@ fn build_ui(app: &Application) {
             let wait_millis = wait_duration.num_milliseconds();
 
             if wait_millis > 0 {
-                if let Some(old_timer) = timer_id_clone.borrow_mut().take() {
-                    old_timer.remove();
+                if *timer_active_clone.borrow() {
+                    show_popup(&window_ref, "이미 타이머가 설정되어 있습니다.");
+                    return;
                 }
 
+                *timer_active_clone.borrow_mut() = true;
+
                 let window_weak = window_ref.downgrade();
+                let timer_active_for_callback = timer_active_clone.clone();
 
-                let new_timer_id = glib::timeout_add_local(
-                    StdDuration::from_millis(wait_millis as u64),
-                    move || {
-                        if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
-                            let _ = enigo.button(enigo::Button::Left, Click);
-                        }
+                glib::timeout_add_local(StdDuration::from_millis(wait_millis as u64), move || {
+                    *timer_active_for_callback.borrow_mut() = false;
 
-                        if let Some(window) = window_weak.upgrade() {
-                            show_popup(&window, "클릭 완료!");
-                        }
+                    if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+                        let _ = enigo.button(enigo::Button::Left, Click);
+                    }
 
-                        glib::ControlFlow::Break
-                    },
-                );
+                    if let Some(window) = window_weak.upgrade() {
+                        show_popup(&window, "클릭 완료!");
+                    }
 
-                *timer_id_clone.borrow_mut() = Some(new_timer_id);
+                    glib::ControlFlow::Break
+                });
 
                 let wait_seconds = wait_millis as f64 / 1000.0;
                 let message = format!("타이머 설정됨: {:.3}초 후 클릭", wait_seconds);
