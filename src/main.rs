@@ -63,6 +63,19 @@ fn build_ui(app: &Application) {
     let current_time_button = Button::with_label("현재 시간 가져오기");
     vbox.append(&current_time_button);
 
+    let enigo = Rc::new(RefCell::new(Enigo::new(&Settings::default()).ok()));
+
+    if enigo.borrow().is_none() {
+        button.set_sensitive(false);
+        button.set_tooltip_text(Some(
+            "입력 제어 초기화에 실패했습니다. Wayland 권한을 확인하세요.",
+        ));
+        show_popup(
+            &window,
+            "입력 제어(Enigo) 초기화에 실패했습니다.\nWayland 환경에서는 원격 데스크톱 제어 권한이 필요할 수 있습니다.",
+        );
+    }
+
     let date_entry_rc = Rc::new(RefCell::new(date_entry));
     let time_entry_rc = Rc::new(RefCell::new(time_entry));
 
@@ -84,10 +97,12 @@ fn build_ui(app: &Application) {
 
     let window_rc_clone = window_rc.clone();
     let timer_active_clone = timer_active.clone();
+    let enigo_clone = enigo.clone();
     button.connect_clicked(move |_| {
         let date_entry_clone = date_entry_rc.clone();
         let time_entry_clone = time_entry_rc.clone();
         let timer_active_clone = timer_active_clone.clone();
+        let enigo_clone = enigo_clone.clone();
 
         let window_ref = window_rc_clone.borrow();
         let date_text = date_entry_clone.borrow().text().to_string();
@@ -126,12 +141,15 @@ fn build_ui(app: &Application) {
                 glib::timeout_add_local(StdDuration::from_millis(wait_millis as u64), move || {
                     *timer_active_for_callback.borrow_mut() = false;
 
-                    if let Ok(mut enigo) = Enigo::new(&Settings::default()) {
+                    if let Some(enigo) = enigo_clone.borrow_mut().as_mut() {
                         let _ = enigo.button(enigo::Button::Left, Click);
-                    }
-
-                    if let Some(window) = window_weak.upgrade() {
-                        show_popup(&window, "클릭 완료!");
+                        if let Some(window) = window_weak.upgrade() {
+                            show_popup(&window, "클릭 완료!");
+                        }
+                    } else {
+                        if let Some(window) = window_weak.upgrade() {
+                            show_popup(&window, "오류: Enigo 인스턴스를 사용할 수 없습니다.");
+                        }
                     }
 
                     glib::ControlFlow::Break
@@ -141,8 +159,6 @@ fn build_ui(app: &Application) {
                 let message = format!("타이머 설정됨: {:.3}초 후 클릭", wait_seconds);
                 show_popup(&window_ref, &message);
             }
-        } else {
-            show_popup(&window_ref, "잘못된 날짜 또는 시간 형식입니다.");
         }
     });
 
