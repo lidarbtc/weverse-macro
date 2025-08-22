@@ -1773,6 +1773,7 @@ dependencies = [
  "enigo",
  "glib",
  "gtk4",
+ "slab",
 ]
 
 [[package]]
